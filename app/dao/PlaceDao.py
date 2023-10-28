@@ -1,23 +1,35 @@
 from app.util.DatabaseConnection import DatabaseConnection
-
 class PlaceDao:
 
     def save(place):
-        db = DatabaseConnection()
-        cursor = db.cursor()
+        # 커서 가져오기
+        cursor = DatabaseConnection().cursor()
 
         # 이미 해당 값이 존재하는지 확인
-        cursor.execute("SELECT name FROM category WHERE name = %s", (place.name,))
+        select_sql = "SELECT * FROM place WHERE name = %s"
+        select_params = (place.name,)
+        cursor.execute(select_sql, select_params)
         exist = cursor.fetchone()
 
-        if exist is None:
+        if not exist:
             # 값이 존재하지 않으면 인서트
             insert_sql = """
-                        INSERT INTO id ()
-                        VALUES (%s)
+                        INSERT INTO place (name, address)
+                        VALUES (%s, %s)
                     """
-            insert_params = (place.name)
+            insert_params = (place.name, place.address)
             cursor.execute(insert_sql, insert_params)
+            place_id = cursor.lastrowid
 
-        db.commit()
-        cursor.close()
+            selectt_sql = "SELECT id FROM category WHERE name = %s"
+            selectt_params = (place.category,)
+            cursor.execute(selectt_sql, selectt_params)
+            result = cursor.fetchone()
+            category_id = result[0]
+
+            insertt_sql = """
+                        INSERT INTO place_category (place_id, category_id)
+                        VALUES (%s, %s)
+                    """
+            insertt_params = (place_id, category_id)
+            cursor.execute(insertt_sql, insertt_params)

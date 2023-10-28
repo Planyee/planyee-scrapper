@@ -1,7 +1,6 @@
 class Place:
 
-    def __init__(self, name, address, longitude=None, latitude=None):
+    def __init__(self, name, address, category):
         self.name = name
-        self.longitude = longitude
-        self.latitude = latitude
         self.address = address
+        self.category = category
