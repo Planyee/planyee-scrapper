@@ -6,18 +6,18 @@ class PlaceDao:
         cursor = DatabaseConnection().cursor()
 
         # 이미 해당 값이 존재하는지 확인
-        select_sql = "SELECT * FROM place WHERE name = %s"
-        select_params = (place.name,)
+        select_sql = "SELECT * FROM place JOIN place_category ON place.id = place_category.place_id JOIN category ON place_category.category_id = category.id WHERE place.name = %s AND category.name = %s"
+        select_params = (place.name, place.category)
         cursor.execute(select_sql, select_params)
         exist = cursor.fetchone()
 
         if not exist:
             # 값이 존재하지 않으면 인서트
             insert_sql = """
-                        INSERT INTO place (name, address)
-                        VALUES (%s, %s)
+                        INSERT INTO place (name, address, image_url, description, etc)
+                        VALUES (%s, %s, %s, %s, %s)
                     """
-            insert_params = (place.name, place.address)
+            insert_params = (place.name, place.address, place.img_url, place.desc, place.info)
             cursor.execute(insert_sql, insert_params)
             place_id = cursor.lastrowid
 

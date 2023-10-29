@@ -1,3 +1,4 @@
+import re
 
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -60,60 +61,56 @@ def visitSoulService():
                         wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "h3.h3.textcenter")))
                         title_element = driver.find_element(By.CSS_SELECTOR, "h3.h3.textcenter")
                         name = title_element.text
-
-                        #전화번호 추출
-                        wait.until(EC.presence_of_element_located((By.XPATH, '//dt[text()="전화번호"]/following-sibling::dd')))
-                        phone_element = driver.find_element(By.XPATH, '//dt[text()="전화번호"]/following-sibling::dd')
-                        phone = phone_element.text
+                        # print(name)
 
                         # 주소 정보 추출
                         wait.until(EC.presence_of_element_located((By.XPATH, '//dt[text()="주소"]/following-sibling::dd')))
                         address_element = driver.find_element(By.XPATH, '//dt[text()="주소"]/following-sibling::dd')
                         address = address_element.text
-
-                        # 위치로 접근할 교통 정보 추출
-                        wait.until(EC.presence_of_element_located((By.XPATH, '//dt[text()="교통 정보"]/following-sibling::dd')))
-                        traffic_element = driver.find_element(By.XPATH, '//dt[text()="교통 정보"]/following-sibling::dd')
-                        traffic = traffic_element.text
-
-                        #해당 정보와 관련된된 웹사이트주소 추출
-                        wait.until(EC.presence_of_element_located((By.XPATH, '//dt[text()="웹사이트"]/following-sibling::dd')))
-                        website_element = driver.find_element(By.XPATH, '//dt[text()="웹사이트"]/following-sibling::dd')
-                        website = website_element.text
+                        # print(address)
 
                         # 사진 정보 추출
-                        wait = WebDriverWait(driver, 10)
-                        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, element_selector)))
-                        # 해당 요소의 스타일 속성 가져오기
-                        element = driver.find_element(By.CSS_SELECTOR, element_selector)
-                        style = element.get_attribute("style")
-                        # 스타일 속성에서 이미지 URL 추출
-                        match = re.search(r"url\('([^']+)'\);", style)
-                        if match:
-                            image_url = match.group(1)
-                            full_image_url = base_url + image_url
-                            print(full_image_url)
-                        else:
-                            print("이미지 URL을 찾을 수 없습니다.")
+                        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".owl-stage-outer .owl-stage .owl-item.active .item")))
+                        image_path = driver.find_element(By.CSS_SELECTOR, ".owl-stage-outer .owl-stage .owl-item.active .item").get_attribute('style')
+                        full_image_path = "https://korean.visitseoul.net" + re.search(r'url\(["\']?(.*?)["\']?\)', image_path).group(1)
+                        # print(full_image_path)
 
+                        # 장소 설명 추출
+                        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".text-area")))
+                        description = driver.find_element(By.CSS_SELECTOR, ".text-area").text
+                        # print(description)
+
+                        # "detail-map-infor" 클래스 내의 모든 dt와 dd 태그를 찾습니다.
+                        dt_elements = driver.find_elements(By.CSS_SELECTOR, ".detail-map-infor dt")
+                        dd_elements = driver.find_elements(By.CSS_SELECTOR, ".detail-map-infor dd")
+                        # dt와 dd의 값을 key와 value로 사용하여 dictionary를 생성합니다.
+                        information = {}
+                        for dt, dd in zip(dt_elements, dd_elements):
+                            key = dt.text
+                            value = dd.text
+                            information[key] = value
+                        # print(information)
 
                         #DB에 맞게 수정사항
-                        place = Place(name, address, subcategory[1],full_image_url)
-                        #info = Info(website, traffic, phone)
+                        place = Place(name, address, subcategory[1], full_image_path, description, information)
 
                         # DB저장
                         PlaceDao.save(place)
 
                         # 트랜잭션 커밋
                         DatabaseConnection.commitTransaction()
-                        print(place.name, " ", place.category)
+                        # print(place.name, " ", place.category)
 
                         # 원래 창으로 전환
                         driver.close()
                         driver.switch_to.window(driver.window_handles[0])
-                    except:
-                        #print('다음 카테고리로 넘어감')
+                    except Exception as e:
+                        print(name, " ", subcategory, " 크롤링 실패")
+                        # 원래 창으로 전환
+                        driver.close()
+                        driver.switch_to.window(driver.window_handles[0])
                         continue
+
 
                 # 페이지 번호 증가
                 page_number += 1
